@@ -13,4 +13,4 @@ get_response = requests.get(endpoint, json={"product_id": 123 }) # HTTP Request
 # REST API HTTP Request -> JSON
 # JavaScript Object Nototion ~ Python Dict
 print(get_response.json())
-print(get_response.status_code)
+# print(get_response.status_code)

@@ -1,18 +1,15 @@
-from django.http import JsonResponse ,HttpResponse
 from django.forms.models import model_to_dict
 from products.models import Product
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from products.serializers import ProductSerializers
 
 
+
+@api_view(["POST","GET"])
 def api_home(request, *args, **kwargs):
-    # جلب منتج عشوائي من قاعدة البيانات باستخدام order_by("?") وأخذ أول نتيجة
-    rand_pro = Product.objects.all().order_by("?").first()
+    instance = Product.objects.all().order_by("?").first()
     data={}
-    # if rand_pro:
-    #     data['id']=rand_pro.id
-    #     data['title']=rand_pro.title
-    #     data['content']=rand_pro.content
-    #     data['price']=rand_pro.price
-    #is semilar to
-    if rand_pro:
-        data = model_to_dict(rand_pro) #لو عايز تعمل فلتر للحجات الي تظهر
-    return JsonResponse(data)  
+    if instance:
+        data = ProductSerializers(instance).data #بيجيب الداتا و يحولها ل Json file و يحفظها في الداتا 
+    return Response(data)  
