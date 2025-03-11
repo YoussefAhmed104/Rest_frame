@@ -1,10 +1,9 @@
 from rest_framework import serializers 
 from .models import Product  
 
-class ProductSerializers(serializers.ModelSerializer):  
+class ProductSerializer(serializers.ModelSerializer):  
     discount = serializers.SerializerMethodField(read_only=True)  
     # إنشاء حقل `discount` يُملأ بواسطة دالة مخصصة وليس من قاعدة البيانات مباشرة
-
     class Meta:  
         model = Product 
         fields = [ 
@@ -16,5 +15,6 @@ class ProductSerializers(serializers.ModelSerializer):
             'discount',  
         ]
 
+    
     def get_discount(self, obj):  
-        return obj.get_discount()  # استدعاء دالة `get_discount` من كلاس Product لحساب الخصم
+        return"20%"
