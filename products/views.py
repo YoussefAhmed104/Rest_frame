@@ -5,13 +5,36 @@ from django.shortcuts import get_object_or_404
 from .models import Product
 from .serializers import ProductSerializer
 
-
+# Show all products Apiview
 class ProductListAPIview(generics.ListAPIView):  # عرض تفاصيل منتج واحد
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
 
 product_detail_view = ProductListAPIview.as_view()  # تحويل الكلاس إلى دالة عرض
+
+# Updata the product Apiview
+class ProductUpdateAPIview(generics.UpdateAPIView):  # عرض تفاصيل منتج واحد
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'pk'
+    def perform_update(self, serializer):  # هذه الدالة يجب أن تكون داخل CreateAPIView فقط!
+        instance = serializer.save()
+        if instance.content:
+            instance.content = instance.title
+
+product_update_view = ProductUpdateAPIview.as_view()  # تحويل الكلاس إلى دالة عرض
+
+
+class ProductDestroyAPIView(generics.DestroyAPIView):  # عرض تفاصيل منتج واحد
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'pk'
+    def perform_update(self, instance):  # هذه الدالة يجب أن تكون داخل CreateAPIView فقط!
+        super().preform_destroy(instance)
+
+
+product_delete_view = ProductDestroyAPIView.as_view()  # تحويل الكلاس إلى دالة عرض
 
 
 class ProductListCreateAPIview(generics.ListCreateAPIView):  # إضافة منتج جديد
