@@ -1,9 +1,7 @@
 from rest_framework import generics,mixins,permissions,authentication
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
 from .models import Product
 from .serializers import ProductSerializer
+from .permissions import IsStaffEditorPermissions
 
 """
 permission_classes = [permissions.] 
@@ -16,8 +14,8 @@ class ProductMixinView(mixins.ListModelMixin, generics.GenericAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.DjangoModelPermissions]
-    
+    permission_classes = [permissions.IsAdminUser,IsStaffEditorPermissions]
+
     def get(self, request, *args, **kwargs):  # Http => GET
         return self.list(request, *args, **kwargs)
 
@@ -27,7 +25,7 @@ class ProductCreateMixinView(mixins.CreateModelMixin, generics.GenericAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.DjangoModelPermissions]
+    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
 
     def post(self, request, *args, **kwargs):  # POST method
         return self.create(request, *args, **kwargs)
@@ -43,6 +41,8 @@ product_create_mixin_view = ProductCreateMixinView.as_view()
 class ProductDetailMixinView(mixins.RetrieveModelMixin, generics.GenericAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    authentication_classes = [authentication.SessionAuthentication]
+    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
 
     def get(self, request, *args, **kwargs):  # GET method
         return self.retrieve(request, *args, **kwargs)
@@ -54,6 +54,9 @@ class ProductUpdateAPIview(generics.UpdateAPIView):  # عرض تفاصيل من�
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     lookup_field = 'pk'
+    authentication_classes = [authentication.SessionAuthentication]
+    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
+
     def perform_update(self, serializer):  # هذه الدالة يجب أن تكون داخل CreateAPIView فقط!
         instance = serializer.save()
         if instance.content:
@@ -66,6 +69,9 @@ class ProductDestroyAPIView(generics.DestroyAPIView):  # عرض تفاصيل م�
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     lookup_field = 'pk'
+    authentication_classes = [authentication.SessionAuthentication]
+    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
+
     def perform_update(self, instance):  # هذه الدالة يجب أن تكون داخل CreateAPIView فقط!
         super().preform_destroy(instance)
 
