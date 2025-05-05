@@ -1,7 +1,8 @@
 from rest_framework import generics, mixins, permissions, authentication
 from .models import Product
 from .serializers import ProductSerializer
-from .permissions import IsStaffEditorPermissions
+from api.permissions import IsStaffEditorPermissions
+from api.mixins import StaffEsitorPermissionsMixin
 from api.authentication import TokenAuthentication
 """
 permission_classes = [permissions.] 
@@ -12,88 +13,96 @@ permission_classes = [permissions.]
 
 
 #######################################################################
-class ProductMixinView(mixins.ListModelMixin, generics.GenericAPIView):
+class ProductListCreateAPIView(
+    StaffEsitorPermissionsMixin,
+    generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    authentication_classes = [
-        authentication.SessionAuthentication,
-        TokenAuthentication,
-    ]
-    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
+    def perform_create(self, serializer):
+        # serializer.save(user=self.request.user)
+        title = serializer.validated_data.get("title")
+        content = serializer.validated_data.get("content") or None
+        if content is None:
+            content = title
+        serializer.save(content=content)
+        # send a Django signal
 
-    def get(self, request, *args, **kwargs):  # Http => GET
+
+product_list_create_view = ProductListCreateAPIView.as_view()
+
+
+######################################################################
+class ProductDetailAPIView(
+    StaffEsitorPermissionsMixin,
+    generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    # lookup_field = 'pk' ??
+
+
+product_detail_view = ProductDetailAPIView.as_view()
+
+
+class ProductUpdateAPIView(
+    StaffEsitorPermissionsMixin,
+    generics.UpdateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = "pk"
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if not instance.content:
+            instance.content = instance.title
+            ##
+
+
+product_update_view = ProductUpdateAPIView.as_view()
+
+
+class ProductDestroyAPIView(
+    StaffEsitorPermissionsMixin, 
+    generics.DestroyAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = "pk"
+
+    def perform_destroy(self, instance):
+        # instance
+        super().perform_destroy(instance)
+
+
+product_destroy_view = ProductDestroyAPIView.as_view()
+
+# Mixins combo view
+class ProductMixinView(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    generics.GenericAPIView,
+):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = "pk"
+
+    def get(self, request, *args, **kwargs):  # HTTP -> get
+        pk = kwargs.get("pk")
+        if pk is not None:
+            return self.retrieve(request, *args, **kwargs)
         return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        # serializer.save(user=self.request.user)
+        title = serializer.validated_data.get("title")
+        content = serializer.validated_data.get("content") or None
+        if content is None:
+            content = "this is a single view doing cool stuff"
+        serializer.save(content=content)
+
+    # def post(): #HTTP -> post
 
 
 product_mixin_view = ProductMixinView.as_view()
-
-
-######################################################################
-class ProductCreateMixinView(mixins.CreateModelMixin, generics.GenericAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    authentication_classes = [
-        authentication.SessionAuthentication,
-        TokenAuthentication,
-    ]
-    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
-
-    def post(self, request, *args, **kwargs):  # POST method
-        return self.create(request, *args, **kwargs)
-
-    def perform_create(self, serializer):  # تخصيص الحفظ
-        title = serializer.validated_data.get("title")
-        content = serializer.validated_data.get("content") or title
-        serializer.save(content=content)
-
-
-product_create_mixin_view = ProductCreateMixinView.as_view()
-
-
-######################################################################
-class ProductDetailMixinView(mixins.RetrieveModelMixin, generics.GenericAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
-
-    def get(self, request, *args, **kwargs):  # GET method
-        return self.retrieve(request, *args, **kwargs)
-
-
-product_detail_mixin_view = ProductDetailMixinView.as_view()
-
-
-######################################################################
-class ProductUpdateAPIview(generics.UpdateAPIView):  # عرض تفاصيل منتج واحد
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    lookup_field = "pk"
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
-
-    def perform_update(
-        self, serializer
-    ):  # هذه الدالة يجب أن تكون داخل CreateAPIView فقط!
-        instance = serializer.save()
-        if instance.content:
-            instance.content = instance.title
-
-
-product_update_view = ProductUpdateAPIview.as_view()  # تحويل الكلاس إلى دالة عرض
-
-
-class ProductDestroyAPIView(generics.DestroyAPIView): #حذف منتج
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    lookup_field = "pk"
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAdminUser, IsStaffEditorPermissions]
-
-    def perform_update(
-        self, instance
-    ):  # هذه الدالة يجب أن تكون داخل CreateAPIView فقط!
-        super().preform_destroy(instance)
-
-
-product_delete_view = ProductDestroyAPIView.as_view()  # تحويل الكلاس إلى دالة عرض
